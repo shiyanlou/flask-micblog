@@ -1,4 +1,4 @@
-#-*- coding:utf-8  -*-
+# -*- coding:utf-8  -*-
 
 from app import db
 
@@ -12,6 +12,8 @@ class User(db.Model):
     email = db.Column(db.String(128), index=True, unique=True)
     role = db.Column(db.SmallInteger, default=ROLE_USER)
     posts = db.relationship('Post', backref='author', lazy='dynamic')
+    about_me = db.Column(db.String(140))
+    last_seen = db.Column(db.DateTime)
 
     def is_authenticated(self):
         return True
@@ -24,11 +26,11 @@ class User(db.Model):
 
     def get_id(self):
         return unicode(self.id)
-   
-    @classmethod 
+
+    @classmethod
     def login_check(cls, user_name):
-        user = cls.query.filter(
-            db.or_(User.nickname==user_name, User.email==user_name)).first()
+        user = cls.query.filter(db.or_(
+            User.nickname == user_name, User.email == user_name)).first()
 
         if not user:
             return None
