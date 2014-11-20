@@ -12,6 +12,7 @@ from forms import (
     LoginForm, SignUpForm, PublishBlogForm, AboutMeForm)
 from models import (
     User, Post, ROLE_USER, ROLE_ADMIN)
+from utils import PER_PAGE
 
 from app import app, db, lm
 
@@ -117,20 +118,25 @@ def sign_up():
         form=form)
 
 
-@app.route('/user/<int:user_id>', methods=["POST", "GET"])
+@app.route('/user/<int:user_id>', defaults={'page':1}, methods=["POST", "GET"])
+@app.route('/user/<int:user_id>/page/<int:page>', methods=['GET', 'POST'])
 @login_required
-def users(user_id):
+def users(user_id, page):
     form = AboutMeForm()
-    user = User.query.filter(User.id == user_id).first()
-    if not user:
-	    redirect("/index")
-    blogs = user.posts.all()
+    if user_id != current_user.id:
+        flash("Sorry, you can only view your profile!", "error")
+        return redirect("/index")
 
+    # pagination = user.posts.paginate(page, PER_PAGE, False).items
+    pagination = Post.query.filter_by(
+        user_id = current_user.id
+        ).order_by(
+        db.desc(Post.timestamp) 
+        ).paginate(page, PER_PAGE, False)
     return render_template(
         "user.html",
         form=form,
-        user=user,
-        blogs=blogs)
+        pagination=pagination)
 
 
 @app.route('/publish/<int:user_id>', methods=["POST", "GET"])
@@ -154,7 +160,7 @@ def publish(user_id):
             flash("Database error!")
             return redirect(url_for("publish", user_id=user_id))
 
-        flash("Publish Successful!")
+        flash("Publish Successful!", "success")
         return redirect(url_for("publish", user_id=user_id))
 
     return render_template(
